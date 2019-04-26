@@ -20,52 +20,78 @@ library(e1071)
 data("OJ")
 
 set.seed(1)
-rowTrain <- createDataPartition(y = OJ$Purchase,
-                                p = 0.747,
-                                list = FALSE)
+rowTrain <- sample(nrow(OJ), 800, replace = FALSE)
+train_data <- OJ[rowTrain,]
+test_data <- OJ[-rowTrain,]
+
 set.seed(1)
-linear.tune <- tune.svm(Purchase~., 
-                        data = OJ[rowTrain,], 
-                        kernel = "linear", 
-                        cost = exp(seq(-5,1,len=20)))
-summary(linear.tune)
+svm_linear <- svm(Purchase ~ ., 
+                  data = train_data,
+                  kernel = 'linear',
+                  cost = 0.01)
+summary(svm_linear)
 
-best.linear <- linear.tune$best.model
-summary(best.linear)
+postResample(predict(svm_linear, train_data), train_data$Purchase)
+postResample(predict(svm_linear, test_data), test_data$Purchase)
 
-pred.linear <- predict(best.linear, newdata = OJ[-rowTrain,])
+#Accuracy with training set: 83.37%
+#Accuracy with testing set: 81.85%
 
-confusionMatrix(data = pred.linear, 
-                reference = OJ$Purchase[-rowTrain])
+ctrl <- trainControl(method = "cv", number = 10)
 
-#Accuracy = 0.8259 or 82.59%
+set.seed(1)
+svml_fit <- train(Purchase~., 
+                  data = train_data, 
+                  method = "svmLinear2",
+                  preProcess = c("center", "scale"),
+                  tuneGrid = data.frame(cost = seq(0.01, 10, length.out = 20)),
+                  trControl = ctrl)
+svml_fit
+
+postResample(predict(svml_fit, train_data), train_data$Purchase)
+postResample(predict(svml_fit, test_data), test_data$Purchase)
+
+#Accuracy of tuned model with training set: 84.25%
+#Accuracy of tuned model with testing set: 81.85%
+
 ```
 
 ###Part B
 ```{r}
 set.seed(1)
-radial.tune <- tune.svm(Purchase~., 
-                        data = OJ[rowTrain,], 
-                        kernel = "radial", 
-                        cost = exp(seq(-4,5,len=10)),
-                        gamma = exp(seq(-8,-3,len=5)))
+svm_radial <- svm(Purchase ~ ., 
+                  data = train_data,
+                  method = 'radial',
+                  cost = 0.01)
+summary(svm_radial)
 
-summary(radial.tune)
+postResample(predict(svm_radial, train_data), train_data$Purchase)
+postResample(predict(svm_radial, test_data), test_data$Purchase)
 
-best.radial <- radial.tune$best.model
-summary(best.radial)
+#Accuracy with training set: 61.75%
+#Accuracy with testing set: 58.89%
 
-pred.radial <- predict(best.radial, newdata = OJ[-rowTrain,])
+set.seed(1)
+svm_radial_tune <- train(Purchase ~ ., 
+                         data = train_data,
+                         method = 'svmRadial',
+                         trControl = ctrl,
+                         preProcess = c('center', 'scale'),
+                         tuneGrid = expand.grid(C = seq(0.01, 10, length.out = 20),
+                                                sigma = 0.05691))
+svm_radial_tune
 
-confusionMatrix(data = pred.radial, 
-                reference = OJ$Purchase[-rowTrain])
+postResample(predict(svm_radial_tune, train_data), train_data$Purchase)
+postResample(predict(svm_radial_tune, test_data), test_data$Purchase)
 
-#Accuracy = 0.837 or 83.7%
+#Accuracy of tuned model with training set: 85.63%
+#Accuracy of tuned model with testing set: 82.59%
+
 ```
 
 ###Part C
-We can see from the prediction accuracy results that the radial tuning model has a higher prediction accuracy rate than the linear tuning model. 
-
+As we can see from the above results, there was less of a difference in accuracy between the initial linear model and the tuned linear model. The radial models had a far greater difference between the initial and the tuned model.   
+The final prediction accuracy with the linear model was 84.5% with training data, and 81.85% with the test set. The final prediction accuracy with the radial model was 85.63% and 82.59% with the test set. The radial model performs better by a small margin.
 
 
 
