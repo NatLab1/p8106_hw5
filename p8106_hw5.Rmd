@@ -1,0 +1,72 @@
+---
+title: "p8106_hw5"
+author: "Nathalie Fadel"
+date: "4/25/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ISLR)
+library(caret)
+library(e1071)
+```
+
+###Part A
+```{r}
+data("OJ")
+
+set.seed(1)
+rowTrain <- createDataPartition(y = OJ$Purchase,
+                                p = 0.747,
+                                list = FALSE)
+set.seed(1)
+linear.tune <- tune.svm(Purchase~., 
+                        data = OJ[rowTrain,], 
+                        kernel = "linear", 
+                        cost = exp(seq(-5,1,len=20)))
+summary(linear.tune)
+
+best.linear <- linear.tune$best.model
+summary(best.linear)
+
+pred.linear <- predict(best.linear, newdata = OJ[-rowTrain,])
+
+confusionMatrix(data = pred.linear, 
+                reference = OJ$Purchase[-rowTrain])
+
+#Accuracy = 0.8259 or 82.59%
+```
+
+###Part B
+```{r}
+set.seed(1)
+radial.tune <- tune.svm(Purchase~., 
+                        data = OJ[rowTrain,], 
+                        kernel = "radial", 
+                        cost = exp(seq(-4,5,len=10)),
+                        gamma = exp(seq(-8,-3,len=5)))
+
+summary(radial.tune)
+
+best.radial <- radial.tune$best.model
+summary(best.radial)
+
+pred.radial <- predict(best.radial, newdata = OJ[-rowTrain,])
+
+confusionMatrix(data = pred.radial, 
+                reference = OJ$Purchase[-rowTrain])
+
+#Accuracy = 0.837 or 83.7%
+```
+
+###Part C
+We can see from the prediction accuracy results that the radial tuning model has a higher prediction accuracy rate than the linear tuning model. 
+
+
+
+
+
